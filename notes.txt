@@ -1,0 +1,7 @@
+fiber app
+redis client
+postgres pgx conn
+
+logger
+validation
+viper
