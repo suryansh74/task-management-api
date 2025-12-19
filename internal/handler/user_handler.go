@@ -20,22 +20,23 @@ func NewUserHandler(userService ports.UserService) *UserHandler {
 	}
 }
 
-// CreateUserRequest dto for incoming req
+// RegisterRequest dto for incoming req
 // =========================================================================
-type CreateUserRequest struct {
+type RegisterRequest struct {
 	Name     string `json:"name" validate:"required,min=2,max=100"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=8,max=72"`
 }
 
-type GetUserRequest struct {
-	Email string `json:"email" validate:"required,email"`
+type LoginRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8"`
 }
 
 // Register handles user registration
 // =========================================================================
 func (h *UserHandler) Register(c *fiber.Ctx) error {
-	var req CreateUserRequest
+	var req RegisterRequest
 
 	// Parse body
 	if err := c.BodyParser(&req); err != nil {
@@ -59,7 +60,7 @@ func (h *UserHandler) Register(c *fiber.Ctx) error {
 // Login handles retrieving user by email
 // =========================================================================
 func (h *UserHandler) Login(c *fiber.Ctx) error {
-	var req GetUserRequest
+	var req LoginRequest
 
 	// Parse body
 	if err := c.BodyParser(&req); err != nil {
@@ -72,7 +73,7 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 	}
 
 	// Call service
-	user, err := h.userService.Login(c.Context(), req.Email)
+	user, err := h.userService.Login(c.Context(), req.Email, req.Password)
 	if err != nil {
 		return err
 	}

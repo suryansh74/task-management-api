@@ -57,7 +57,7 @@ func (s *userService) Register(ctx context.Context, name, email, password string
 
 // Login retrieves user information by email
 // =========================================================================
-func (s *userService) Login(ctx context.Context, email string) (*ports.UserResponse, error) {
+func (s *userService) Login(ctx context.Context, email string, password string) (*ports.UserResponse, error) {
 	// Find user by email
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
@@ -65,6 +65,12 @@ func (s *userService) Login(ctx context.Context, email string) (*ports.UserRespo
 	}
 
 	logger.Log.Info().Str("user_id", user.ID).Str("email", email).Msg("User retrieved successfully")
+
+	// check hash matches
+	err = utils.CheckPassword(password, user.Password)
+	if err != nil {
+		return nil, apperror.NewUnauthorizedError("invalid email or password")
+	}
 
 	return &ports.UserResponse{
 		ID:    user.ID,
