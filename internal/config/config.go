@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/spf13/viper"
 )
 
@@ -20,6 +22,9 @@ type Config struct {
 	RedisAddr     string `mapstructure:"REDIS_ADDR"`
 	RedisDB       string `mapstructure:"REDIS_DB"`
 	RedisPassword string `mapstructure:"REDIS_PASSWORD"`
+
+	// session
+	SessionExpiration time.Duration `mapstructure:"SESSION_EXPIRATION"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

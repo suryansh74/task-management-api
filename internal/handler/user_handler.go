@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/suryansh74/task-management-api-project/internal/apperror"
 	"github.com/suryansh74/task-management-api-project/internal/http/response"
@@ -9,14 +11,18 @@ import (
 )
 
 type UserHandler struct {
-	userService ports.UserService
+	userService       ports.UserService
+	sessionService    ports.SessionService
+	sessionExpiration time.Duration
 }
 
 // NewUserHandler Constructor for UserHandler
 // =========================================================================
-func NewUserHandler(userService ports.UserService) *UserHandler {
+func NewUserHandler(userService ports.UserService, sessionService ports.SessionService, sessionExpiration time.Duration) *UserHandler {
 	return &UserHandler{
-		userService: userService,
+		userService:       userService,
+		sessionService:    sessionService,
+		sessionExpiration: sessionExpiration,
 	}
 }
 
@@ -28,6 +34,8 @@ type RegisterRequest struct {
 	Password string `json:"password" validate:"required,min=8,max=72"`
 }
 
+// LoginRequest dto for incoming req
+// =========================================================================
 type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=8"`
@@ -77,6 +85,23 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	// set user session
+	sessionID, err := h.sessionService.CreateSession(c.Context(), user.ID)
+	if err != nil {
+		return apperror.NewInternalError("user session not created", err)
+	}
+
+	// set session id in HTTP-ONLY cookie
+	c.Cookie(&fiber.Cookie{
+		Name:     "session_id",
+		Value:    sessionID,
+		Path:     "/",
+		HTTPOnly: true,
+		Secure:   false,
+		SameSite: "Lax",
+		Expires:  time.Now().Add(h.sessionExpiration),
+	})
 
 	return response.Success(c, fiber.StatusOK, "User logged in successfully", user)
 }

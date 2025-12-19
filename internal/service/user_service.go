@@ -72,6 +72,8 @@ func (s *userService) Login(ctx context.Context, email string, password string) 
 		return nil, apperror.NewUnauthorizedError("invalid email or password")
 	}
 
+	logger.Log.Info().Str("user_id", user.ID).Str("email", email).Msg("User logged in successfully")
+
 	return &ports.UserResponse{
 		ID:    user.ID,
 		Name:  user.Name,

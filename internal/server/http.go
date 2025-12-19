@@ -28,14 +28,19 @@ func StartServer(app *fiber.App, redisClient *redis.Client, postgresClient *pgx.
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(postgresClient)
+	sessionRepo := repository.NewSessionRepository(redisClient)
+	taskRepo := repository.NewTaskRepository(postgresClient)
 
 	// Initialize services (no config needed now)
 	userService := service.NewUserService(userRepo)
+	sessionService := service.NewSessionService(sessionRepo, cfg.SessionExpiration)
+	taskService := service.NewTaskService(taskRepo)
 
 	// Initialize handlers
-	userHandler := handler.NewUserHandler(userService)
+	userHandler := handler.NewUserHandler(userService, sessionService, cfg.SessionExpiration)
+	taskHandler := handler.NewTaskHandler(taskService)
 
-	server.setupRoutes(userHandler)
+	server.setupRoutes(userHandler, taskHandler)
 	addr := fmt.Sprintf("%s:%s", cfg.ServerHost, cfg.ServerPort)
 	logger.Log.Info().Msg("server starting on port:" + addr)
 	app.Listen(addr)
