@@ -56,7 +56,9 @@ func main() {
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
+		ErrorHandler: server.ErrorHandler(),
 	})
+	app.Use(server.RequestLogger())
 
 	// routes
 	server.StartServer(app, redisClient, postgresClient, cfg)
