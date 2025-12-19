@@ -7,7 +7,7 @@ import (
 // UserService defines business logic operations for users
 type UserService interface {
 	Register(ctx context.Context, name, email, password string) (*UserResponse, error)
-	GetUserByEmail(ctx context.Context, email string) (*UserResponse, error)
+	Login(ctx context.Context, email string) (*UserResponse, error)
 }
 
 // UserResponse is the service layer response for user data

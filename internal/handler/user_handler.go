@@ -56,9 +56,9 @@ func (h *UserHandler) Register(c *fiber.Ctx) error {
 	return response.Success(c, fiber.StatusCreated, "User registered successfully.", user)
 }
 
-// GetUser handles retrieving user by email
+// Login handles retrieving user by email
 // =========================================================================
-func (h *UserHandler) GetUser(c *fiber.Ctx) error {
+func (h *UserHandler) Login(c *fiber.Ctx) error {
 	var req GetUserRequest
 
 	// Parse body
@@ -72,10 +72,10 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 	}
 
 	// Call service
-	user, err := h.userService.GetUserByEmail(c.Context(), req.Email)
+	user, err := h.userService.Login(c.Context(), req.Email)
 	if err != nil {
 		return err
 	}
 
-	return response.Success(c, fiber.StatusOK, "User retrieved successfully", user)
+	return response.Success(c, fiber.StatusOK, "User logged in successfully", user)
 }

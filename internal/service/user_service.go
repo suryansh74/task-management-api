@@ -21,7 +21,8 @@ func NewUserService(userRepo ports.UserRepository) ports.UserService {
 	}
 }
 
-// CreateUser creates a new user account
+// Register creates a new user account
+// =========================================================================
 func (s *userService) Register(ctx context.Context, name, email, password string) (*ports.UserResponse, error) {
 	// Hash password
 	hashedPassword, err := utils.HashedPassword(password)
@@ -54,8 +55,9 @@ func (s *userService) Register(ctx context.Context, name, email, password string
 	}, nil
 }
 
-// GetUserByEmail retrieves user information by email
-func (s *userService) GetUserByEmail(ctx context.Context, email string) (*ports.UserResponse, error) {
+// Login retrieves user information by email
+// =========================================================================
+func (s *userService) Login(ctx context.Context, email string) (*ports.UserResponse, error) {
 	// Find user by email
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
