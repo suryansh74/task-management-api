@@ -61,5 +61,5 @@ func main() {
 	app.Use(server.RequestLogger())
 
 	// routes
-	server.StartServer(app, redisClient, postgresClient, cfg)
+	server.StartServer(app, redisClient, postgresClient, &cfg)
 }
