@@ -12,12 +12,16 @@ type UserHandler struct {
 	userService ports.UserService
 }
 
+// NewUserHandler Constructor for UserHandler
+// =========================================================================
 func NewUserHandler(userService ports.UserService) *UserHandler {
 	return &UserHandler{
 		userService: userService,
 	}
 }
 
+// CreateUserRequest dto for incoming req
+// =========================================================================
 type CreateUserRequest struct {
 	Name     string `json:"name" validate:"required,min=2,max=100"`
 	Email    string `json:"email" validate:"required,email"`
@@ -28,8 +32,9 @@ type GetUserRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
 
-// CreateUser handles user creation
-func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
+// Register handles user registration
+// =========================================================================
+func (h *UserHandler) Register(c *fiber.Ctx) error {
 	var req CreateUserRequest
 
 	// Parse body
@@ -43,15 +48,16 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	}
 
 	// Call service
-	user, err := h.userService.CreateUser(c.Context(), req.Name, req.Email, req.Password)
+	user, err := h.userService.Register(c.Context(), req.Name, req.Email, req.Password)
 	if err != nil {
 		return err // Global error handler will catch this
 	}
 
-	return response.Success(c, fiber.StatusCreated, "User created successfully", user)
+	return response.Success(c, fiber.StatusCreated, "User registered successfully.", user)
 }
 
 // GetUser handles retrieving user by email
+// =========================================================================
 func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 	var req GetUserRequest
 

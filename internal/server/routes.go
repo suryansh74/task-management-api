@@ -7,7 +7,7 @@ import (
 
 func (s *server) setupRoutes(userHandler *handler.UserHandler) {
 	s.app.Get("/check_health", s.checkHealth)
-	s.app.Post("/users", userHandler.CreateUser)
+	s.app.Post("/register", userHandler.Register)
 	s.app.Get("/users", userHandler.GetUser)
 }
 

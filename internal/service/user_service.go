@@ -22,7 +22,7 @@ func NewUserService(userRepo ports.UserRepository) ports.UserService {
 }
 
 // CreateUser creates a new user account
-func (s *userService) CreateUser(ctx context.Context, name, email, password string) (*ports.UserResponse, error) {
+func (s *userService) Register(ctx context.Context, name, email, password string) (*ports.UserResponse, error) {
 	// Hash password
 	hashedPassword, err := utils.HashedPassword(password)
 	if err != nil {
@@ -37,13 +37,15 @@ func (s *userService) CreateUser(ctx context.Context, name, email, password stri
 		Password: hashedPassword,
 	}
 
+	// NOTE: no need to check if user already exists repo check itself while creating new user
+
 	// Save to repository
 	userID, err := s.userRepo.CreateUser(ctx, user)
 	if err != nil {
 		return nil, err // Repository already returns AppError
 	}
 
-	logger.Log.Info().Str("user_id", userID).Str("email", email).Msg("User created successfully")
+	logger.Log.Info().Str("user_id", userID).Str("email", email).Msg("User registered successfully")
 
 	return &ports.UserResponse{
 		ID:    userID,
