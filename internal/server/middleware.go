@@ -88,7 +88,7 @@ func (s *server) RedisRateLimiter(
 	return func(ctx *fiber.Ctx) error {
 		// incr count
 		reqCtx := ctx.UserContext()
-		key := fmt.Sprintf("%s:%s:%s", s.cfg.RedisAppName.String(), prefix, keyFunc(ctx))
+		key := fmt.Sprintf("%s:%s:%s", s.cfg.RedisAppName, prefix, keyFunc(ctx))
 		count, err := s.redisClient.Incr(reqCtx, key).Result()
 		if err != nil {
 			panic(err)
