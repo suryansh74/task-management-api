@@ -5,3 +5,5 @@ postgres pgx conn
 logger
 validation
 viper
+
+postgres shell users id automatic random id setup
