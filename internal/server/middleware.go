@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/suryansh74/task-management-api-project/internal/apperror"
 	"github.com/suryansh74/task-management-api-project/internal/http/response"
 	"github.com/suryansh74/task-management-api-project/internal/logger"
 )
@@ -59,6 +60,21 @@ func (s *server) AuthMiddleware(c *fiber.Ctx) error {
 
 	c.Locals("user_id", userID)
 	return c.Next()
+}
+
+func (s *server) GuestMiddleware(c *fiber.Ctx) error {
+	reqCtx := c.UserContext()
+	sessionID := c.Cookies("session_id")
+	if sessionID == "" {
+		c.Next()
+	}
+
+	userID, err := s.redisClient.HGet(reqCtx, sessionID, "user_id").Result()
+	if err != nil || userID == "" {
+		c.Next()
+	}
+
+	return apperror.NewForbiddenError("already logged in")
 }
 
 // RedisRateLimiter
