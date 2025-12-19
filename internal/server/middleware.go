@@ -66,12 +66,12 @@ func (s *server) GuestMiddleware(c *fiber.Ctx) error {
 	reqCtx := c.UserContext()
 	sessionID := c.Cookies("session_id")
 	if sessionID == "" {
-		c.Next()
+		return c.Next()
 	}
 
 	userID, err := s.redisClient.HGet(reqCtx, sessionID, "user_id").Result()
 	if err != nil || userID == "" {
-		c.Next()
+		return c.Next()
 	}
 
 	return apperror.NewForbiddenError("already logged in")

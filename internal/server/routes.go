@@ -17,10 +17,13 @@ func (s *server) setupRoutes(userHandler *handler.UserHandler, taskHandler *hand
 	taskLimiter := s.RedisRateLimiter("task", 100, time.Minute, func(c *fiber.Ctx) string {
 		return c.IP()
 	})
-	// public routes
+
+	// open for all
 	s.app.Get("/check_health", publicLimiter, s.checkHealth)
-	s.app.Post("/register", publicLimiter, userHandler.Register)
-	s.app.Post("/login", publicLimiter, userHandler.Login)
+	// guest routes
+	guest := s.app.Group("/", s.GuestMiddleware)
+	guest.Post("/register", publicLimiter, userHandler.Register)
+	guest.Post("/login", publicLimiter, userHandler.Login)
 
 	// protected routes
 	protected := s.app.Group("/", s.AuthMiddleware)
