@@ -14,15 +14,17 @@ type UserHandler struct {
 	userService       ports.UserService
 	sessionService    ports.SessionService
 	sessionExpiration time.Duration
+	redisAppName      string
 }
 
 // NewUserHandler Constructor for UserHandler
 // =========================================================================
-func NewUserHandler(userService ports.UserService, sessionService ports.SessionService, sessionExpiration time.Duration) *UserHandler {
+func NewUserHandler(userService ports.UserService, sessionService ports.SessionService, sessionExpiration time.Duration, redisAppName string) *UserHandler {
 	return &UserHandler{
 		userService:       userService,
 		sessionService:    sessionService,
 		sessionExpiration: sessionExpiration,
+		redisAppName:      redisAppName,
 	}
 }
 
@@ -104,4 +106,23 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 	})
 
 	return response.Success(c, fiber.StatusOK, "User logged in successfully", user)
+}
+
+// Logout delete session
+// =========================================================================
+func (h *UserHandler) Logout(c *fiber.Ctx) error {
+	sessionID := c.Cookies("session_id")
+	// Call service
+	_ = h.sessionService.Logout(c.Context(), sessionID)
+
+	// set session id in HTTP-ONLY cookie
+	c.Cookie(&fiber.Cookie{
+		Name:     "session_id",
+		Value:    "",
+		HTTPOnly: true,
+		Secure:   false,
+		SameSite: "Lax",
+	})
+
+	return response.Success(c, fiber.StatusOK, "User logout successfully", nil)
 }

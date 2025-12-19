@@ -13,14 +13,16 @@ import (
 type sessionService struct {
 	sessionRepo       ports.SessionRepository
 	sessionExpiration time.Duration
+	redisAppName      string
 }
 
 // NewSessionService creates a new user session service instance
 // =========================================================================
-func NewSessionService(sessionRepo ports.SessionRepository, sessionExpiration time.Duration) ports.SessionService {
+func NewSessionService(sessionRepo ports.SessionRepository, sessionExpiration time.Duration, redisAppName string) ports.SessionService {
 	return &sessionService{
 		sessionRepo:       sessionRepo,
 		sessionExpiration: sessionExpiration,
+		redisAppName:      redisAppName,
 	}
 }
 
@@ -29,7 +31,7 @@ func NewSessionService(sessionRepo ports.SessionRepository, sessionExpiration ti
 func (s *sessionService) CreateSession(ctx context.Context, userID string) (string, error) {
 	// create random id
 	id := utils.MustRandomID()
-	sessionID := fmt.Sprintf("task-management-api:sessions:%s", id)
+	sessionID := fmt.Sprintf("%s:sessions:%s", s.redisAppName, id)
 	err := s.sessionRepo.Create(ctx, &models.Session{ID: sessionID, UserID: userID}, s.sessionExpiration)
 	if err != nil {
 		return "", err
@@ -39,7 +41,7 @@ func (s *sessionService) CreateSession(ctx context.Context, userID string) (stri
 
 // Delete it unlink user session
 // =========================================================================
-func (s *sessionService) DeleteSession(ctx context.Context, sessionID string) error {
+func (s *sessionService) Logout(ctx context.Context, sessionID string) error {
 	err := s.sessionRepo.Delete(ctx, sessionID)
 	if err != nil {
 		return err

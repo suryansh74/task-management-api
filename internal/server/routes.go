@@ -9,8 +9,8 @@ import (
 
 // setupRoutes serves all http routes
 // ==================================================
+
 func (s *server) setupRoutes(userHandler *handler.UserHandler, taskHandler *handler.TaskHandler) {
-	// init redis rate limit
 	publicLimiter := s.RedisRateLimiter("public", 10, time.Minute, func(c *fiber.Ctx) string {
 		return c.IP()
 	})
@@ -18,16 +18,16 @@ func (s *server) setupRoutes(userHandler *handler.UserHandler, taskHandler *hand
 		return c.IP()
 	})
 
-	// open for all
+	// Public route (no auth check)
 	s.app.Get("/check_health", publicLimiter, s.checkHealth)
-	// guest routes
-	guest := s.app.Group("/", s.GuestMiddleware)
-	guest.Post("/register", publicLimiter, userHandler.Register)
-	guest.Post("/login", publicLimiter, userHandler.Login)
 
-	// protected routes
-	protected := s.app.Group("/", s.AuthMiddleware)
-	protected.Get("/tasks", taskLimiter, taskHandler.GetTasks)
+	// Guest-only routes (must NOT be logged in)
+	s.app.Post("/register", publicLimiter, s.GuestMiddleware, userHandler.Register)
+	s.app.Post("/login", publicLimiter, s.GuestMiddleware, userHandler.Login)
+
+	// Protected routes (must be logged in)
+	s.app.Post("/logout", publicLimiter, s.AuthMiddleware, userHandler.Logout)
+	s.app.Get("/tasks", taskLimiter, s.AuthMiddleware, taskHandler.GetTasks)
 }
 
 // checkHealth

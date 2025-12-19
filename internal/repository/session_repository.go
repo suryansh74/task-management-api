@@ -46,13 +46,13 @@ func (us *sessionRepository) GetByID(ctx context.Context, id string) (*models.Se
 	return nil, nil
 }
 
-// unlink session
+// Delete it unlink session
 // =========================================================================
 func (us *sessionRepository) Delete(ctx context.Context, sessionID string) error {
-	err := us.redisClient.Unlink(ctx, sessionID)
+	err := us.redisClient.Unlink(ctx, sessionID).Err()
 	if err != nil {
-		logger.Log.Err(err.Err())
-		return err.Err()
+		logger.Log.Err(err).Msg("failed to unlink session")
+		return apperror.NewInternalError("unable to delete session", err)
 	}
 	return nil
 }

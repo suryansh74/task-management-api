@@ -17,13 +17,15 @@ type server struct {
 	app            *fiber.App
 	redisClient    *redis.Client
 	postgresClient *pgx.Conn
+	cfg            *config.Config
 }
 
-func StartServer(app *fiber.App, redisClient *redis.Client, postgresClient *pgx.Conn, cfg config.Config) {
+func StartServer(app *fiber.App, redisClient *redis.Client, postgresClient *pgx.Conn, cfg *config.Config) {
 	server := &server{
 		app:            app,
 		redisClient:    redisClient,
 		postgresClient: postgresClient,
+		cfg:            cfg,
 	}
 
 	// Initialize repositories
@@ -33,11 +35,11 @@ func StartServer(app *fiber.App, redisClient *redis.Client, postgresClient *pgx.
 
 	// Initialize services (no config needed now)
 	userService := service.NewUserService(userRepo)
-	sessionService := service.NewSessionService(sessionRepo, cfg.SessionExpiration)
+	sessionService := service.NewSessionService(sessionRepo, cfg.SessionExpiration, cfg.RedisAppName.String())
 	taskService := service.NewTaskService(taskRepo)
 
 	// Initialize handlers
-	userHandler := handler.NewUserHandler(userService, sessionService, cfg.SessionExpiration)
+	userHandler := handler.NewUserHandler(userService, sessionService, cfg.SessionExpiration, cfg.RedisAppName.String())
 	taskHandler := handler.NewTaskHandler(taskService)
 
 	server.setupRoutes(userHandler, taskHandler)
