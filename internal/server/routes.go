@@ -27,7 +27,12 @@ func (s *server) setupRoutes(userHandler *handler.UserHandler, taskHandler *hand
 
 	// Protected routes (must be logged in)
 	s.app.Post("/logout", publicLimiter, s.AuthMiddleware, userHandler.Logout)
+	// tasks
 	s.app.Get("/tasks", taskLimiter, s.AuthMiddleware, taskHandler.GetTasks)
+	s.app.Post("/tasks", taskLimiter, s.AuthMiddleware, taskHandler.CreateTask)
+	s.app.Get("/tasks/:id", taskLimiter, s.AuthMiddleware, taskHandler.GetTaskByID)
+	s.app.Put("/tasks/:id", taskLimiter, s.AuthMiddleware, taskHandler.UpdateTaskByID)
+	s.app.Delete("/tasks/:id", taskLimiter, s.AuthMiddleware, taskHandler.DeleteTaskByID)
 }
 
 // checkHealth

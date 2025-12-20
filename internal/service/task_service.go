@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"time"
 
 	"github.com/suryansh74/task-management-api-project/internal/models"
 	"github.com/suryansh74/task-management-api-project/internal/ports"
@@ -20,14 +19,34 @@ func NewTaskService(taskRepo ports.TaskRepository) ports.TaskService {
 	}
 }
 
-// CreateSession it sets new session
+// GetTasks get all tasks
 // =========================================================================
 func (s *taskService) GetTasks(ctx context.Context) ([]*models.Task, error) {
-	// create random id
-	tasks := []*models.Task{
-		{ID: "1", Title: "Coding in Golang", Content: "very easy", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-		{ID: "2", Title: "Coding in Golang", Content: "very easy", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-		{ID: "3", Title: "C++ for beginner", Content: "created by bjarne Stroutstrup", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	tasks, err := s.taskRepo.GetAllTasks(ctx)
+	if err != nil {
+		return nil, err
 	}
 	return tasks, nil
+}
+
+// CreateTask get all tasks
+// =========================================================================
+func (s *taskService) CreateTask(ctx context.Context, task *models.Task) (string, error) {
+	id, err := s.taskRepo.CreateTask(ctx, task)
+	if err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
+func (s *taskService) GetTaskByID(ctx context.Context, id string) (*models.Task, error) {
+	return s.taskRepo.GetTaskByID(ctx, id)
+}
+
+func (s *taskService) UpdateTaskByID(ctx context.Context, id string, task *models.Task) error {
+	return s.taskRepo.UpdateTaskByID(ctx, id, task)
+}
+
+func (s *taskService) DeleteTaskByID(ctx context.Context, id string) error {
+	return s.taskRepo.DeleteTaskByID(ctx, id)
 }
