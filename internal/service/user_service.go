@@ -16,6 +16,7 @@ type userService struct {
 
 // NewUserService creates a new user service instance
 func NewUserService(userRepo ports.UserRepository) ports.UserService {
+	logger.Log.Info().Msg("initializing user service")
 	return &userService{
 		userRepo: userRepo,
 	}
@@ -24,12 +25,28 @@ func NewUserService(userRepo ports.UserRepository) ports.UserService {
 // Register creates a new user account
 // =========================================================================
 func (s *userService) Register(ctx context.Context, name, email, password string) (*ports.UserResponse, error) {
+	logger.Log.Debug().
+		Str("email", email).
+		Str("name", name).
+		Msg("registering new user")
+
 	// Hash password
+	logger.Log.Debug().
+		Str("email", email).
+		Msg("hashing user password")
+
 	hashedPassword, err := utils.HashedPassword(password)
 	if err != nil {
-		logger.Log.Error().Err(err).Msg("Failed to hash password")
+		logger.Log.Error().
+			Err(err).
+			Str("email", email).
+			Msg("failed to hash password")
 		return nil, apperror.NewInternalError("Failed to process password", err)
 	}
+
+	logger.Log.Debug().
+		Str("email", email).
+		Msg("password hashed successfully")
 
 	// Create user model
 	user := &models.User{
@@ -41,12 +58,26 @@ func (s *userService) Register(ctx context.Context, name, email, password string
 	// NOTE: no need to check if user already exists repo check itself while creating new user
 
 	// Save to repository
+	logger.Log.Debug().
+		Str("email", email).
+		Str("name", name).
+		Msg("saving user to repository")
+
 	userID, err := s.userRepo.CreateUser(ctx, user)
 	if err != nil {
+		logger.Log.Error().
+			Err(err).
+			Str("email", email).
+			Str("name", name).
+			Msg("failed to create user in repository")
 		return nil, err // Repository already returns AppError
 	}
 
-	logger.Log.Info().Str("user_id", userID).Str("email", email).Msg("User registered successfully")
+	logger.Log.Info().
+		Str("user_id", userID).
+		Str("email", email).
+		Str("name", name).
+		Msg("user registered successfully")
 
 	return &ports.UserResponse{
 		ID:    userID,
@@ -58,21 +89,43 @@ func (s *userService) Register(ctx context.Context, name, email, password string
 // Login retrieves user information by email
 // =========================================================================
 func (s *userService) Login(ctx context.Context, email string, password string) (*ports.UserResponse, error) {
+	logger.Log.Debug().
+		Str("email", email).
+		Msg("attempting user login")
+
 	// Find user by email
+	logger.Log.Debug().
+		Str("email", email).
+		Msg("finding user by email")
+
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
+		logger.Log.Warn().
+			Err(err).
+			Str("email", email).
+			Msg("user not found or repository error")
 		return nil, err // Repository already returns AppError
 	}
 
-	logger.Log.Info().Str("user_id", user.ID).Str("email", email).Msg("User retrieved successfully")
+	logger.Log.Debug().
+		Str("user_id", user.ID).
+		Str("email", email).
+		Msg("user found, verifying password")
 
 	// check hash matches
 	err = utils.CheckPassword(password, user.Password)
 	if err != nil {
+		logger.Log.Warn().
+			Str("user_id", user.ID).
+			Str("email", email).
+			Msg("invalid password attempt")
 		return nil, apperror.NewUnauthorizedError("invalid email or password")
 	}
 
-	logger.Log.Info().Str("user_id", user.ID).Str("email", email).Msg("User logged in successfully")
+	logger.Log.Info().
+		Str("user_id", user.ID).
+		Str("email", email).
+		Msg("user logged in successfully")
 
 	return &ports.UserResponse{
 		ID:    user.ID,
