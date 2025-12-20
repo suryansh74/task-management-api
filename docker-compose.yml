@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: task-management-postgres
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: task_management_api
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # Comment out for now
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d task_management_api"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+    networks:
+      - task-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: task-management-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6380:6379" # Changed host port to 6380
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - task-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: task-management-app
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8000
+      DB_HOST: postgres
+      DB_USER: root
+      DB_PASSWORD: secret
+      DB_PORT: 5432
+      DB_NAME: task_management_api
+      REDIS_ADDR: redis:6379 # This stays the same (internal Docker network)
+      REDIS_PASSWORD: ""
+      REDIS_DB: "0"
+      REDIS_APP_NAME: task-management-api
+      SESSION_EXPIRATION: 30m
+      CACHE_EXPIRATION: 10m
+      APP_ENV: production
+      LOG_LEVEL: info
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - task-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  task-network:
+    driver: bridge
