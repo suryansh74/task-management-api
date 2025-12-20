@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/suryansh74/task-management-api-project/internal/apperror"
 	"github.com/suryansh74/task-management-api-project/internal/models"
 	"github.com/suryansh74/task-management-api-project/internal/ports"
 )
@@ -18,9 +20,9 @@ func NewTaskRepository(db *pgx.Conn) ports.TaskRepository {
 
 // GetAllTasks get all tasks
 // =========================================================================
-func (tr *taskRepository) GetAllTasks(ctx context.Context) ([]*models.Task, error) {
+func (tr *taskRepository) GetAllTasks(ctx context.Context, userID string) ([]*models.Task, error) {
 	var tasks []*models.Task
-	rows, _ := tr.db.Query(context.Background(), "select * from tasks")
+	rows, _ := tr.db.Query(context.Background(), "select id, title, content, created_at, updated_at from tasks where user_id = $1", userID)
 
 	for rows.Next() {
 		var task models.Task
@@ -37,7 +39,7 @@ func (tr *taskRepository) GetAllTasks(ctx context.Context) ([]*models.Task, erro
 // =========================================================================
 func (tr *taskRepository) CreateTask(ctx context.Context, task *models.Task) (string, error) {
 	var id string
-	err := tr.db.QueryRow(context.Background(), "insert into tasks(title, content) values($1,$2) returning id", task.Title, task.Content).Scan(&id)
+	err := tr.db.QueryRow(context.Background(), "insert into tasks(title, content, user_id) values($1,$2,$3) returning id", task.Title, task.Content, task.UserID).Scan(&id)
 	if err != nil {
 		return "", err
 	}
@@ -50,7 +52,7 @@ func (tr *taskRepository) GetTaskByID(ctx context.Context, id string) (*models.T
 	task := new(models.Task)
 
 	err := tr.db.QueryRow(ctx,
-		`SELECT id, title, content, created_at, updated_at
+		`SELECT id, title, content, created_at, updated_at, user_id
 		 FROM tasks WHERE id = $1`,
 		id,
 	).Scan(
@@ -59,8 +61,12 @@ func (tr *taskRepository) GetTaskByID(ctx context.Context, id string) (*models.T
 		&task.Content,
 		&task.CreatedAt,
 		&task.UpdatedAt,
+		&task.UserID,
 	)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperror.NewNotFoundError("task not found")
+		}
 		return nil, err
 	}
 
@@ -83,7 +89,7 @@ func (tr *taskRepository) UpdateTaskByID(ctx context.Context, id string, task *m
 	}
 
 	if cmd.RowsAffected() == 0 {
-		return pgx.ErrNoRows
+		return apperror.NewNotFoundError("task not found")
 	}
 
 	return nil
@@ -101,7 +107,7 @@ func (tr *taskRepository) DeleteTaskByID(ctx context.Context, id string) error {
 	}
 
 	if cmd.RowsAffected() == 0 {
-		return pgx.ErrNoRows
+		return apperror.NewNotFoundError("task not found")
 	}
 
 	return nil

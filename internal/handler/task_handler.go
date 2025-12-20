@@ -52,8 +52,13 @@ type GetTaskResponse struct {
 // GetTasks return all tasks
 // =========================================================================
 func (h *TaskHandler) GetTasks(c *fiber.Ctx) error {
+	// policy
+	userID, ok := c.Locals("user_id").(string)
+	if !ok || userID == "" {
+		return apperror.NewUnauthorizedError("invalid auth context")
+	}
 	// Call service
-	tasks, err := h.taskService.GetTasks(c.Context())
+	tasks, err := h.taskService.GetTasks(c.Context(), userID)
 	if err != nil {
 		return err // Global error handler will catch this
 	}
@@ -76,6 +81,13 @@ func (h *TaskHandler) CreateTask(c *fiber.Ctx) error {
 		return response.ValidationError(c, fieldErrors)
 	}
 
+	userID, ok := c.Locals("user_id").(string)
+	if !ok || userID == "" {
+		return apperror.NewUnauthorizedError("invalid auth context")
+	}
+
+	req.UserID = userID
+
 	// Call service
 	id, err := h.taskService.CreateTask(c.Context(), &req)
 	if err != nil {
@@ -93,7 +105,12 @@ func (h *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
 		return apperror.NewBadRequestError("task id is required")
 	}
 
-	task, err := h.taskService.GetTaskByID(c.Context(), id)
+	userID, ok := c.Locals("user_id").(string)
+	if !ok || userID == "" {
+		return apperror.NewUnauthorizedError("invalid auth context")
+	}
+
+	task, err := h.taskService.GetTaskByID(c.Context(), id, userID)
 	if err != nil {
 		return err
 	}
@@ -123,7 +140,12 @@ func (h *TaskHandler) UpdateTaskByID(c *fiber.Ctx) error {
 		Content: req.Content,
 	}
 
-	if err := h.taskService.UpdateTaskByID(c.Context(), id, task); err != nil {
+	userID, ok := c.Locals("user_id").(string)
+	if !ok || userID == "" {
+		return apperror.NewUnauthorizedError("invalid auth context")
+	}
+
+	if err := h.taskService.UpdateTaskByID(c.Context(), id, userID, task); err != nil {
 		return err
 	}
 
@@ -138,7 +160,12 @@ func (h *TaskHandler) DeleteTaskByID(c *fiber.Ctx) error {
 		return apperror.NewBadRequestError("task id is required")
 	}
 
-	if err := h.taskService.DeleteTaskByID(c.Context(), id); err != nil {
+	userID, ok := c.Locals("user_id").(string)
+	if !ok || userID == "" {
+		return apperror.NewUnauthorizedError("invalid auth context")
+	}
+
+	if err := h.taskService.DeleteTaskByID(c.Context(), id, userID); err != nil {
 		return err
 	}
 

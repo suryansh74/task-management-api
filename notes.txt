@@ -7,3 +7,10 @@ validation
 viper
 
 postgres shell users id automatic random id setup
+
+**************************************************
+1. make for update updated_at
+2. add relationships between users and tasks
+3. paginate
+4. policy
+5. logger
