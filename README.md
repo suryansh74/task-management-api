@@ -14,7 +14,7 @@ A production-ready REST API built with Go, PostgreSQL, and Redis implementing ad
 
 ## Tech Stack
 
-- **Language:** Go 1.23
+- **Language:** Go 1.25
 - **Framework:** Fiber v2
 - **Database:** PostgreSQL 16
 - **Cache:** Redis 7
@@ -23,8 +23,8 @@ A production-ready REST API built with Go, PostgreSQL, and Redis implementing ad
 ## Quick Start
 
 Clone repository
-git clone <your-repo>
-cd task-management-api-project
+git clone github.com/suryansh74/task-management-api
+cd task-management-api
 
 Start with Docker Compose
 docker-compose up -d --build
