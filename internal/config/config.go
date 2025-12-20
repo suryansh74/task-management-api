@@ -26,6 +26,7 @@ type Config struct {
 	// session
 	SessionExpiration time.Duration `mapstructure:"SESSION_EXPIRATION"`
 	RedisAppName      string        `mapstructure:"REDIS_APP_NAME"`
+	CacheExpiration   time.Duration `mapstructure:"CACHE_EXPIRATION"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

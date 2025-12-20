@@ -12,14 +12,18 @@ import (
 )
 
 type TaskHandler struct {
-	taskService ports.TaskService
+	taskService     ports.TaskService
+	redisAppName    string
+	cacheExpiration time.Duration
 }
 
 // NewTaskHandler Constructor for TaskHandler
 // =========================================================================
-func NewTaskHandler(taskService ports.TaskService) *TaskHandler {
+func NewTaskHandler(taskService ports.TaskService, redisAppName string, cacheExpiration time.Duration) *TaskHandler {
 	return &TaskHandler{
-		taskService: taskService,
+		taskService:     taskService,
+		redisAppName:    redisAppName,
+		cacheExpiration: cacheExpiration,
 	}
 }
 
@@ -81,6 +85,8 @@ func (h *TaskHandler) CreateTask(c *fiber.Ctx) error {
 	return response.Success(c, fiber.StatusOK, "Task Created", id)
 }
 
+// GetTaskByID get task
+// =========================================================================
 func (h *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if id == "" {
@@ -95,6 +101,8 @@ func (h *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
 	return response.Success(c, fiber.StatusOK, "Task Found", task)
 }
 
+// UpdateTaskByID update task
+// =========================================================================
 func (h *TaskHandler) UpdateTaskByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if id == "" {
@@ -122,6 +130,8 @@ func (h *TaskHandler) UpdateTaskByID(c *fiber.Ctx) error {
 	return response.Success(c, fiber.StatusOK, "Task Updated", nil)
 }
 
+// DeleteTaskByID delete task
+// =========================================================================
 func (h *TaskHandler) DeleteTaskByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if id == "" {
