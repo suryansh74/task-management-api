@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package task.v1;
+
+option go_package = "github.com/suryansh74/task-management-api-project/api/gen/task/v1;taskv1";
+
+import "google/protobuf/timestamp.proto";
+
+// TaskService exposes task operations over gRPC.
+// It reuses the same application core (ports.TaskService) as the REST API.
+service TaskService {
+  rpc GetTasks(GetTasksRequest) returns (GetTasksResponse);
+  rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse);
+  rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse);
+}
+
+message Task {
+  string id = 1;
+  string user_id = 2;
+  string title = 3;
+  string content = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message GetTasksRequest {
+  string user_id = 1; // required for now (auth via metadata can be added later)
+}
+
+message GetTasksResponse {
+  repeated Task tasks = 1;
+}
+
+message GetTaskRequest {
+  string id = 1;
+  string user_id = 2;
+}
+
+message GetTaskResponse {
+  Task task = 1;
+}
+
+message CreateTaskRequest {
+  string user_id = 1;
+  string title = 2;
+  string content = 3;
+}
+
+message CreateTaskResponse {
+  string id = 1;
+  Task task = 2;
+}
+
+message UpdateTaskRequest {
+  string id = 1;
+  string user_id = 2;
+  string title = 3;
+  string content = 4;
+}
+
+message UpdateTaskResponse {
+  Task task = 1;
+}
+
+message DeleteTaskRequest {
+  string id = 1;
+  string user_id = 2;
+}
+
+message DeleteTaskResponse {}

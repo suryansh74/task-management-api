@@ -10,6 +10,7 @@ type Config struct {
 	// server
 	ServerHost string `mapstructure:"SERVER_HOST"`
 	ServerPort string `mapstructure:"SERVER_PORT"`
+	GRPCPort   string `mapstructure:"GRPC_PORT"`
 
 	// postgres
 	DBPort     string `mapstructure:"DB_PORT"`
@@ -35,6 +36,9 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.SetConfigType("env")
 
 	viper.AutomaticEnv()
+
+	// Sensible defaults
+	viper.SetDefault("GRPC_PORT", "50051")
 
 	err = viper.ReadInConfig()
 	if err != nil {

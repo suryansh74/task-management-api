@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
+	grpcadapter "github.com/suryansh74/task-management-api-project/internal/adapter/grpc"
 	"github.com/suryansh74/task-management-api-project/internal/config"
 	"github.com/suryansh74/task-management-api-project/internal/handler"
 	"github.com/suryansh74/task-management-api-project/internal/logger"
@@ -21,6 +22,7 @@ type server struct {
 	cfg            *config.Config
 }
 
+// StartServer wires repositories → services → adapters (REST + gRPC) and starts both servers.
 func StartServer(app *fiber.App, redisClient *redis.Client, postgresClient *pgx.Conn, cfg *config.Config) {
 	server := &server{
 		app:            app,
@@ -40,12 +42,32 @@ func StartServer(app *fiber.App, redisClient *redis.Client, postgresClient *pgx.
 	var sessionService ports.SessionService = service.NewSessionService(sessionRepo, cfg.SessionExpiration, cfg.RedisAppName)
 	var taskService ports.TaskService = service.NewTaskService(taskRepo, taskCacheRepo, cfg.RedisAppName, cfg.CacheExpiration)
 
-	// Initialize HTTP handlers (driving adapters)
+	// Initialize HTTP handlers (driving adapters – REST)
 	var userHandler ports.UserHandler = handler.NewUserHandler(userService, sessionService, cfg.SessionExpiration, cfg.RedisAppName)
 	var taskHandler ports.TaskHandler = handler.NewTaskHandler(taskService, cfg.RedisAppName, cfg.SessionExpiration)
 
 	server.setupRoutes(userHandler, taskHandler)
+
+	// Initialize gRPC server (driving adapter – gRPC)
+	// Shares the same taskService instance as REST
+	grpcPort := cfg.GRPCPort
+	if grpcPort == "" {
+		grpcPort = "50051"
+	}
+	grpcAddr := fmt.Sprintf("%s:%s", cfg.ServerHost, grpcPort)
+	grpcServer := grpcadapter.NewServer(grpcAddr, taskService)
+
+	// Start gRPC in background
+	go func() {
+		if err := grpcServer.Start(); err != nil {
+			logger.Log.Fatal().Err(err).Msg("gRPC server failed")
+		}
+	}()
+
+	// Start REST (blocks)
 	addr := fmt.Sprintf("%s:%s", cfg.ServerHost, cfg.ServerPort)
-	logger.Log.Info().Msg("server starting on port:" + addr)
-	app.Listen(addr)
+	logger.Log.Info().Msg("REST server starting on " + addr)
+	if err := app.Listen(addr); err != nil {
+		logger.Log.Fatal().Err(err).Msg("REST server failed")
+	}
 }

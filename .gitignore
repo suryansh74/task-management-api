@@ -40,7 +40,3 @@ Thumbs.db
 # Debug / profiling
 *.prof
 *.pprof
-
-# Generated (if any)
-*.pb.go
-!**/pb/**/*.pb.go
