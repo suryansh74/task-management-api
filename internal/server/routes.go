@@ -18,8 +18,8 @@ func (s *server) setupRoutes(userHandler ports.UserHandler, taskHandler ports.Ta
 		return c.IP()
 	})
 
-	// Public route (no auth check)
-	s.app.Get("/check_health", publicLimiter, s.checkHealth)
+	// Health must NOT be rate-limited — k8s probes hit this every few seconds
+	s.app.Get("/check_health", s.checkHealth)
 
 	// Guest-only routes (must NOT be logged in)
 	s.app.Post("/register", publicLimiter, s.GuestMiddleware, userHandler.Register)
