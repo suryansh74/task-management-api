@@ -10,13 +10,13 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # Comment out for now
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U root -d task_management_api"]
       interval: 5s
       timeout: 5s
       retries: 15
-      start_period: 60s
+      start_period: 30s
     networks:
       - task-network
 
@@ -25,7 +25,7 @@ services:
     container_name: task-management-redis
     command: redis-server --appendonly yes
     ports:
-      - "6380:6379" # Changed host port to 6380
+      - "6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -33,7 +33,6 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
-      start_period: 5s
     networks:
       - task-network
 
@@ -45,12 +44,13 @@ services:
     environment:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 8000
+      GRPC_PORT: 50051
       DB_HOST: postgres
       DB_USER: root
       DB_PASSWORD: secret
       DB_PORT: 5432
       DB_NAME: task_management_api
-      REDIS_ADDR: redis:6379 # This stays the same (internal Docker network)
+      REDIS_ADDR: redis:6379
       REDIS_PASSWORD: ""
       REDIS_DB: "0"
       REDIS_APP_NAME: task-management-api
@@ -60,6 +60,7 @@ services:
       LOG_LEVEL: info
     ports:
       - "8000:8000"
+      - "50051:50051"
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,9 +70,46 @@ services:
       - task-network
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: task-management-prometheus
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    depends_on:
+      - app
+    networks:
+      - task-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: task-management-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - task-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   task-network:
