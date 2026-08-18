@@ -4,13 +4,13 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/suryansh74/task-management-api-project/internal/handler"
+	"github.com/suryansh74/task-management-api-project/internal/ports"
 )
 
 // setupRoutes serves all http routes
 // ==================================================
 
-func (s *server) setupRoutes(userHandler *handler.UserHandler, taskHandler *handler.TaskHandler) {
+func (s *server) setupRoutes(userHandler ports.UserHandler, taskHandler ports.TaskHandler) {
 	publicLimiter := s.RedisRateLimiter("public", 10, time.Minute, func(c *fiber.Ctx) string {
 		return c.IP()
 	})

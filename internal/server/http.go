@@ -9,6 +9,7 @@ import (
 	"github.com/suryansh74/task-management-api-project/internal/config"
 	"github.com/suryansh74/task-management-api-project/internal/handler"
 	"github.com/suryansh74/task-management-api-project/internal/logger"
+	"github.com/suryansh74/task-management-api-project/internal/ports"
 	"github.com/suryansh74/task-management-api-project/internal/repository"
 	"github.com/suryansh74/task-management-api-project/internal/service"
 )
@@ -28,20 +29,20 @@ func StartServer(app *fiber.App, redisClient *redis.Client, postgresClient *pgx.
 		cfg:            cfg,
 	}
 
-	// Initialize repositories
-	userRepo := repository.NewUserRepository(postgresClient)
-	sessionRepo := repository.NewSessionRepository(redisClient)
-	taskRepo := repository.NewTaskRepository(postgresClient)
-	taskCacheRepo := repository.NewTaskCacheRepository(redisClient)
+	// Initialize repositories (driven adapters)
+	var userRepo ports.UserRepository = repository.NewUserRepository(postgresClient)
+	var sessionRepo ports.SessionRepository = repository.NewSessionRepository(redisClient)
+	var taskRepo ports.TaskRepository = repository.NewTaskRepository(postgresClient)
+	var taskCacheRepo ports.TaskCacheRepository = repository.NewTaskCacheRepository(redisClient)
 
-	// Initialize services (no config needed now)
-	userService := service.NewUserService(userRepo)
-	sessionService := service.NewSessionService(sessionRepo, cfg.SessionExpiration, cfg.RedisAppName)
-	taskService := service.NewTaskService(taskRepo, taskCacheRepo, cfg.RedisAppName, cfg.CacheExpiration)
+	// Initialize services (application core)
+	var userService ports.UserService = service.NewUserService(userRepo)
+	var sessionService ports.SessionService = service.NewSessionService(sessionRepo, cfg.SessionExpiration, cfg.RedisAppName)
+	var taskService ports.TaskService = service.NewTaskService(taskRepo, taskCacheRepo, cfg.RedisAppName, cfg.CacheExpiration)
 
-	// Initialize handlers
-	userHandler := handler.NewUserHandler(userService, sessionService, cfg.SessionExpiration, cfg.RedisAppName)
-	taskHandler := handler.NewTaskHandler(taskService, cfg.RedisAppName, cfg.SessionExpiration)
+	// Initialize HTTP handlers (driving adapters)
+	var userHandler ports.UserHandler = handler.NewUserHandler(userService, sessionService, cfg.SessionExpiration, cfg.RedisAppName)
+	var taskHandler ports.TaskHandler = handler.NewTaskHandler(taskService, cfg.RedisAppName, cfg.SessionExpiration)
 
 	server.setupRoutes(userHandler, taskHandler)
 	addr := fmt.Sprintf("%s:%s", cfg.ServerHost, cfg.ServerPort)
