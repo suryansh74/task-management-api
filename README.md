@@ -161,3 +161,18 @@ See `.env.example`. Key vars: `SERVER_PORT`, `GRPC_PORT`, `SESSION_EXPIRATION`, 
 ## License
 
 MIT
+
+## Kubernetes (kind)
+
+See [deploy/k8s/README.md](deploy/k8s/README.md).
+
+```bash
+docker compose down
+sudo fuser -k 18080/tcp 15051/tcp 2>/dev/null || true
+kind delete cluster --name task-management 2>/dev/null || true
+kind create cluster --config deploy/k8s/kind-config.yaml
+docker build -t task-management-api:local .
+kind load docker-image task-management-api:local --name task-management
+kubectl apply -f deploy/k8s/
+curl http://localhost:18080/check_health
+```

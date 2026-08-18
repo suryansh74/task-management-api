@@ -4,9 +4,10 @@ name: task-management
 nodes:
   - role: control-plane
     extraPortMappings:
+      # Use high ports to avoid clash with docker-compose (8000/50051)
       - containerPort: 30080
-        hostPort: 8080
+        hostPort: 18080
         protocol: TCP
       - containerPort: 30051
-        hostPort: 50051
+        hostPort: 15051
         protocol: TCP

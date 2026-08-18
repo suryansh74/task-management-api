@@ -1,42 +1,63 @@
 # Kubernetes (kind) deployment
 
-## Prerequisites (one-time on your machine)
+## Prerequisites (one-time)
 
-### 1. Install kubectl
 ```bash
-# Linux
+# kubectl
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 chmod +x kubectl && sudo mv kubectl /usr/local/bin/
 
-# macOS
-brew install kubectl
-```
-
-### 2. Install kind
-```bash
-# Linux
+# kind
 curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64
 chmod +x kind && sudo mv kind /usr/local/bin/
-
-# macOS
-brew install kind
 ```
 
 Docker must be running.
 
-## Deploy
+## Free ports before creating the cluster
+
+`docker compose` often holds **8000** and **50051**. kind maps host ports and will fail if they are taken.
 
 ```bash
-# From repo root
+# Stop compose stack for this project (preferred)
+docker compose down
 
-# 1. Create kind cluster (maps host 8080 -> NodePort 30080)
+# Or free specific ports (Linux)
+sudo fuser -k 8080/tcp 2>/dev/null
+sudo fuser -k 18080/tcp 2>/dev/null
+sudo fuser -k 50051/tcp 2>/dev/null
+sudo fuser -k 15051/tcp 2>/dev/null
+sudo fuser -k 6443/tcp 2>/dev/null
+
+# See what holds a port
+sudo ss -tlnp | grep -E '8080|18080|50051|15051' || true
+```
+
+If an old kind cluster exists:
+
+```bash
+kind delete cluster --name task-management
+```
+
+## Deploy (from repo root)
+
+```bash
+git pull
+# already inside task-management-api — do NOT cd task-management-api again
+
+# 0. Free ports / stop compose
+docker compose down
+sudo fuser -k 18080/tcp 15051/tcp 2>/dev/null || true
+kind delete cluster --name task-management 2>/dev/null || true
+
+# 1. Create kind cluster (host 18080 -> API, 15051 -> gRPC)
 kind create cluster --config deploy/k8s/kind-config.yaml
 
-# 2. Build app image and load into kind
+# 2. Build image and load into kind
 docker build -t task-management-api:local .
 kind load docker-image task-management-api:local --name task-management
 
-# 3. Apply manifests (order matters)
+# 3. Apply manifests
 kubectl apply -f deploy/k8s/00-namespace.yaml
 kubectl apply -f deploy/k8s/01-configmap.yaml
 kubectl apply -f deploy/k8s/02-secret.yaml
@@ -47,28 +68,32 @@ kubectl apply -f deploy/k8s/05-app.yaml
 
 # 4. Wait for pods
 kubectl -n task-management get pods -w
-# Wait until postgres, redis, task-management-api are Running / Ready
 
-# 5. Smoke test (NodePort mapped to localhost:8080)
-curl http://localhost:8080/check_health
-curl http://localhost:8080/metrics | head
+# 5. Smoke test
+curl http://localhost:18080/check_health
+curl http://localhost:18080/metrics | head
 ```
+
+| Endpoint | URL |
+|----------|-----|
+| REST health | http://localhost:18080/check_health |
+| Metrics | http://localhost:18080/metrics |
+| gRPC | localhost:15051 |
 
 ## Useful commands
 
 ```bash
 kubectl -n task-management get all
 kubectl -n task-management logs -l app=task-management-api --tail=50
-kubectl -n task-management describe pod -l app=task-management-api
 
-# Tear down
 kind delete cluster --name task-management
 ```
 
-## What this demonstrates
+## Port map
 
-- Deployment + Service + ConfigMap + Secret
-- Readiness/liveness probes
-- Config injection (no baked secrets in image)
-- Multi-replica API Deployment
-- Local kind cluster with host port mapping
+| Host port | Purpose |
+|-----------|---------|
+| 18080 | REST (NodePort 30080) |
+| 15051 | gRPC (NodePort 30051) |
+
+These avoid default docker-compose ports 8000 / 50051.
