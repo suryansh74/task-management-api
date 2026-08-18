@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-management-api
+  namespace: task-management
+  labels:
+    app: task-management-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: task-management-api
+  template:
+    metadata:
+      labels:
+        app: task-management-api
+    spec:
+      containers:
+        - name: api
+          # For kind: load local image with kind load docker-image
+          image: task-management-api:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+            - name: grpc
+              containerPort: 50051
+          envFrom:
+            - configMapRef:
+                name: task-management-config
+            - secretRef:
+                name: task-management-secret
+          readinessProbe:
+            httpGet:
+              path: /check_health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /check_health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-management-api
+  namespace: task-management
+spec:
+  type: NodePort
+  selector:
+    app: task-management-api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+      nodePort: 30080
+    - name: grpc
+      port: 50051
+      targetPort: grpc
+      nodePort: 30051
