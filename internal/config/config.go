@@ -37,13 +37,17 @@ func LoadConfig(path string) (config Config, err error) {
 
 	viper.AutomaticEnv()
 
-	// Sensible defaults
+	// Defaults (used when running under docker-compose env or missing keys)
+	viper.SetDefault("SERVER_HOST", "0.0.0.0")
+	viper.SetDefault("SERVER_PORT", "8000")
 	viper.SetDefault("GRPC_PORT", "50051")
+	viper.SetDefault("REDIS_DB", "0")
+	viper.SetDefault("SESSION_EXPIRATION", "30m")
+	viper.SetDefault("CACHE_EXPIRATION", "10m")
+	viper.SetDefault("REDIS_APP_NAME", "task-management-api")
 
-	err = viper.ReadInConfig()
-	if err != nil {
-		return config, err
-	}
+	// Prefer file if present; ignore if missing (docker-compose injects env)
+	_ = viper.ReadInConfig()
 
 	err = viper.Unmarshal(&config)
 	return config, err
